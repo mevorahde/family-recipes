@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Environment variables (Firebase config) — keep .env.example committed instead
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

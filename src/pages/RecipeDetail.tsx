@@ -1,10 +1,11 @@
 import { Link, useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { getRecipeBySlug } from '../lib/recipes';
+import { useRecipes } from '../context/useRecipes';
 
 export default function RecipeDetail() {
   const { slug } = useParams<{ slug: string }>();
-  const recipe = slug ? getRecipeBySlug(slug) : undefined;
+  const { recipes } = useRecipes();
+  const recipe = slug ? recipes.find((r) => r.slug === slug) : undefined;
 
   if (!recipe) {
     return (

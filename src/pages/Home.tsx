@@ -1,11 +1,15 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { recipes, getCategories } from '../lib/recipes';
+import { useRecipes } from '../context/useRecipes';
 
 export default function Home() {
+  const { recipes } = useRecipes();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('All');
-  const categories = useMemo(() => ['All', ...getCategories()], []);
+  const categories = useMemo(
+    () => ['All', ...Array.from(new Set(recipes.map((r) => r.category))).sort()],
+    [recipes],
+  );
 
   const filtered = recipes.filter((recipe) => {
     const matchesCategory = category === 'All' || recipe.category === category;

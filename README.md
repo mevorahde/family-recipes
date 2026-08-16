@@ -31,6 +31,24 @@ Built with React + Vite + TypeScript. Hosted on GitHub Pages.
 
 3. Save the file — it will automatically show up on the site (no code changes needed).
 
+Signed-in users can also add recipes directly from the site (see below) — those are stored in Firestore instead of as files.
+
+## Sign-in & adding recipes from the site
+
+Anyone can view/search recipes. Only signed-in users can add new recipes via the "Add Recipe" page. This is powered by [Firebase](https://firebase.google.com) (Authentication + Firestore), since GitHub Pages only serves static files.
+
+### One-time Firebase setup
+
+1. Create a free project at [console.firebase.google.com](https://console.firebase.google.com).
+2. **Authentication** → Sign-in method → enable **Email/Password**.
+3. **Authentication** → Users → manually add a user for yourself (admin) and any family members you want to allow to add recipes.
+4. **Firestore Database** → create a database (production mode) → **Rules** tab → paste in the contents of [firestore.rules](firestore.rules).
+5. Project settings → Your apps → add a **Web app** → copy the config values.
+6. Copy [.env.example](.env.example) to `.env.local` and fill in the values from step 5.
+7. For deployed builds, add the same values as **repository secrets** (Settings → Secrets and variables → Actions) with the same names as in `.env.example`, so the GitHub Actions workflow can inject them at build time.
+
+`.env.local` is gitignored and never committed — only you (and GitHub Actions secrets) have the actual keys.
+
 ## Development
 
 ```bash
