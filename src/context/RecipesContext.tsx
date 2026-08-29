@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp } from 'firebase/firestore';
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+} from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { recipes as staticRecipes } from '../lib/recipes';
 import { useAuth } from './useAuth';
@@ -32,6 +41,7 @@ export function RecipesProvider({ children }: { children: ReactNode }) {
               cookTime: data.cookTime,
               source: data.source,
               content: data.content,
+              createdBy: data.createdBy,
               createdByEmail: data.createdByEmail,
             } satisfies Recipe;
           }),
@@ -59,8 +69,15 @@ export function RecipesProvider({ children }: { children: ReactNode }) {
     });
   }
 
+  async function deleteRecipe(slug: string) {
+    if (!db) {
+      throw new Error('Firebase is not configured; cannot delete recipes.');
+    }
+    await deleteDoc(doc(db, RECIPES_COLLECTION, slug));
+  }
+
   return (
-    <RecipesContext.Provider value={{ recipes, loading, addRecipe }}>
+    <RecipesContext.Provider value={{ recipes, loading, addRecipe, deleteRecipe }}>
       {children}
     </RecipesContext.Provider>
   );

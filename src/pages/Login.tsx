@@ -17,8 +17,19 @@ export default function Login() {
     try {
       await signIn(email, password);
       navigate('/');
-    } catch {
-      setError('Sign in failed. Check your email and password.');
+    } catch (caughtError: unknown) {
+      const errorCode =
+        typeof caughtError === 'object' &&
+        caughtError !== null &&
+        'code' in caughtError &&
+        typeof caughtError.code === 'string'
+          ? caughtError.code
+          : null;
+      setError(
+        errorCode
+          ? `Sign in failed: ${errorCode}.`
+          : 'Sign in failed. Check your email and password.',
+      );
     } finally {
       setSubmitting(false);
     }

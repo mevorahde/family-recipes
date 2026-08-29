@@ -11,8 +11,11 @@
     "deploy": "npm run build && gh-pages -d dist"
   },
   "dependencies": {
+    "@kenjiuno/msgreader": "^1.28.0",
     "firebase": "^12.17.1",
     "js-yaml": "^5.2.3",
+    "mammoth": "^1.12.2",
+    "postal-mime": "^3.0.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-markdown": "^10.1.0",

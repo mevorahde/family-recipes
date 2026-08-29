@@ -7,6 +7,7 @@ export interface RecipesContextValue {
   recipes: Recipe[];
   loading: boolean;
   addRecipe: (recipe: NewRecipeInput) => Promise<void>;
+  deleteRecipe: (slug: string) => Promise<void>;
 }
 
 export const RecipesContext = createContext<RecipesContextValue | undefined>(undefined);

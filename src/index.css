@@ -199,6 +199,33 @@ h1 {
   flex: 1;
 }
 
+.import-section {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.import-section legend {
+  color: var(--accent-dark);
+  font-weight: 700;
+  padding: 0 4px;
+}
+
+.import-url {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.import-url label {
+  flex: 1;
+}
+
+.import-url button {
+  flex: none;
+}
+
 .error {
   color: #b3261e;
   font-size: 0.9rem;
