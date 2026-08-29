@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getFunctions, type Functions } from 'firebase/functions';
 
 // Values come from Vite env vars (see .env.example) — safe to expose client-side,
 // access is restricted by Firebase Auth + Firestore security rules, not secrecy.
@@ -21,11 +22,13 @@ export const isFirebaseConfigured = Boolean(
 // site) when Firebase hasn't been configured yet — recipes remain viewable either way.
 export let auth: Auth | null = null;
 export let db: Firestore | null = null;
+export let functionsClient: Functions | null = null;
 
 if (isFirebaseConfigured) {
   const app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   db = getFirestore(app);
+  functionsClient = getFunctions(app, 'us-central1');
 } else {
   console.warn(
     'Firebase is not configured (see .env.example). Sign-in and adding recipes are disabled; recipes are still viewable.',

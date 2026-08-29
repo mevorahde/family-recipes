@@ -35,7 +35,7 @@ Signed-in users can also add recipes directly from the site (see below) — thos
 
 ## Sign-in & adding recipes from the site
 
-Anyone can view/search recipes. Only signed-in users can add new recipes via the "Add Recipe" page. This is powered by [Firebase](https://firebase.google.com) (Authentication + Firestore), since GitHub Pages only serves static files.
+Anyone can view/search recipes. Only signed-in users can add, delete their own Firestore recipes, and import recipes via the "Add Recipe" page. This is powered by [Firebase](https://firebase.google.com) (Authentication, Firestore, and Cloud Functions), since GitHub Pages only serves static files.
 
 ### One-time Firebase setup
 
@@ -49,6 +49,18 @@ Anyone can view/search recipes. Only signed-in users can add new recipes via the
 
 `.env.local` is gitignored and never committed — only you (and GitHub Actions secrets) have the actual keys.
 
+### Website imports
+
+The Add Recipe page imports Word `.docx`, saved-email `.eml` and Outlook `.msg` files in the browser. Website imports use the authenticated `importRecipeUrl` Cloud Function so recipe sites that block browser CORS requests can still be imported when they expose standard Recipe JSON-LD data.
+
+Cloud Functions require the Firebase project to use the **Blaze** plan. After authenticating the Firebase CLI, deploy the importer with:
+
+```bash
+npx firebase-tools@latest deploy --only functions:importRecipeUrl
+```
+
+The function accepts only public HTTPS addresses, validates DNS results and redirects, and requires a signed-in Firebase user.
+
 ## Development
 
 ```bash
@@ -56,6 +68,7 @@ npm install
 npm run dev      # start local dev server
 npm run build    # type-check and build for production
 npm run preview  # preview the production build locally
+npm --prefix functions run build  # type-check the Cloud Function
 ```
 
 ## Deployment
