@@ -62,8 +62,11 @@ export function RecipesProvider({ children }: { children: ReactNode }) {
     if (!db) {
       throw new Error('Firebase is not configured; cannot save recipes.');
     }
+    const recipeFields = Object.fromEntries(
+      Object.entries(recipe).filter(([, value]) => value !== undefined),
+    );
     await addDoc(collection(db, RECIPES_COLLECTION), {
-      ...recipe,
+      ...recipeFields,
       createdBy: user?.uid ?? null,
       createdAt: serverTimestamp(),
     });
