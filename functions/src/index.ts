@@ -62,6 +62,22 @@ function text(value: unknown): string | undefined {
   return typeof value === 'string' ? value.trim() : undefined;
 }
 
+function duration(value: unknown): string | undefined {
+  const isoDuration = text(value);
+  if (!isoDuration) return undefined;
+
+  const match = /^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?)?$/.exec(isoDuration);
+  if (!match) return isoDuration;
+  const [, days, hours, minutes] = match;
+  return [
+    days && `${days} day${days === '1' ? '' : 's'}`,
+    hours && `${hours} hr`,
+    minutes && `${minutes} min`,
+  ]
+    .filter(Boolean)
+    .join(' ') || undefined;
+}
+
 function instructions(value: unknown): string | undefined {
   if (!Array.isArray(value)) return text(value);
   const items = value
@@ -120,7 +136,16 @@ export const importRecipeUrl = onCall({ region: 'us-central1', timeoutSeconds: 1
 
     const content = markdown(recipe);
     if (!content) throw new HttpsError('failed-precondition', 'That page has no ingredients or instructions to import.');
-    return { title: text(recipe.name), source: url.toString(), content };
+    return {
+      title: text(recipe.name),
+      category: text(recipe.recipeCategory) ?? text(recipe.recipeCuisine),
+      tags: text(recipe.keywords),
+      servings: text(recipe.recipeYield),
+      prepTime: duration(recipe.prepTime),
+      cookTime: duration(recipe.cookTime),
+      source: url.toString(),
+      content,
+    };
   }
 
   throw new HttpsError('failed-precondition', 'The recipe page redirected too many times.');

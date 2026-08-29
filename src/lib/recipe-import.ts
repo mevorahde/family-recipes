@@ -4,6 +4,11 @@ import { functionsClient } from './firebase';
 
 export interface ImportedRecipe {
   title?: string;
+  category?: string;
+  tags?: string;
+  servings?: string;
+  prepTime?: string;
+  cookTime?: string;
   source?: string;
   content: string;
 }

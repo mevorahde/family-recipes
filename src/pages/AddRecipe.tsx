@@ -24,6 +24,11 @@ export default function AddRecipe() {
 
   function applyImport(recipe: ImportedRecipe) {
     if (recipe.title) setTitle(recipe.title);
+    if (recipe.category) setCategory(recipe.category);
+    if (recipe.tags) setTags(recipe.tags);
+    if (recipe.servings) setServings(recipe.servings);
+    if (recipe.prepTime) setPrepTime(recipe.prepTime);
+    if (recipe.cookTime) setCookTime(recipe.cookTime);
     if (recipe.source) setSource(recipe.source);
     setContent(recipe.content);
   }
