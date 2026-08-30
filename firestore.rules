@@ -1,12 +1,12 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Anyone can read recipes; only signed-in users can add them.
-    // Copy this into Firebase Console > Firestore Database > Rules.
+    // Public reading; any signed-in user can add, edit, reorder, or delete recipes.
     match /recipes/{recipeId} {
       allow read: if true;
       allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.createdBy;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null;
     }
   }
 }

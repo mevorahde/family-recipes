@@ -8,6 +8,7 @@ export interface Recipe {
   cookTime?: string;
   source?: string;
   content: string;
+  order?: number;
   // present only for recipes added via the site (stored in Firestore)
   createdBy?: string;
   createdByEmail?: string;
