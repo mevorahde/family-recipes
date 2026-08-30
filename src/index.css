@@ -117,6 +117,26 @@ h1 {
   padding-bottom: 4px;
 }
 
+/* Keep native list markers so Markdown numbering and hanging indents work. */
+.recipe-content { line-height: 1.65; }
+.recipe-content :is(ol, ul) {
+  margin-block: 1rem 1.5rem;
+  padding-inline-start: 2rem;
+  list-style-position: outside;
+}
+.recipe-content li { padding-inline-start: 0.4rem; }
+.recipe-content ol > li + li { margin-block-start: 0.8rem; }
+.recipe-content ul > li + li { margin-block-start: 0.35rem; }
+.recipe-content ol > li::marker {
+  color: var(--accent-dark);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.recipe-content li > p { margin-block: 0.5rem; }
+.recipe-content li > p:first-child { margin-block-start: 0; }
+.recipe-content li > p:last-child { margin-block-end: 0; }
+.recipe-content li > :is(ol, ul) { margin-block: 0.5rem; }
+
 .navbar {
   display: flex;
   justify-content: space-between;
@@ -385,6 +405,9 @@ h1 {
   .print-recipe h1, .print-recipe h2, .print-recipe h3 { break-after: avoid; color: black; }
   .print-recipe img { max-width: 100%; break-inside: avoid; }
   .print-recipe p, .print-recipe li { orphans: 3; widows: 3; }
+  .recipe-content { line-height: 1.5; }
+  .recipe-content ol > li + li { margin-block-start: 0.4rem; }
+  .recipe-content ol > li::marker { color: black; }
 }
 .recipe-edit-form h1 { margin: 0; }
 .recipe-edit-form fieldset {
