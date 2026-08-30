@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Family Recipes — a cookbook made with love</title>
+  <rect width="64" height="64" rx="14" fill="#7a4113" />
+  <path d="M10 25Q21 21 32 27Q43 21 54 25V51Q43 47 32 53Q21 47 10 51Z" fill="#fff5e5" />
+  <path d="M32 29V49" fill="none" stroke="#c69c70" stroke-width="3" stroke-linecap="round" />
+  <path d="M32 24L23 16C17 10 25 4 32 11C39 4 47 10 41 16Z" fill="#f3bc8b" />
+  <path d="M16 33Q21 32 26 34M16 40Q21 39 26 41M38 34Q43 32 48 33M38 41Q43 39 48 40" fill="none" stroke="#c69c70" stroke-width="3" stroke-linecap="round" />
+</svg>
