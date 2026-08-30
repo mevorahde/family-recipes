@@ -5,6 +5,8 @@ import { useRecipes } from '../context/useRecipes';
 import { importRecipeFile, importRecipeUrl, type ImportedRecipe } from '../lib/recipe-import';
 import ImageRecipeImporter from '../components/ImageRecipeImporter';
 import { detailLabels, emptyDetailSuggestions, type RecipeDetails } from '../lib/recipe-suggestions';
+import { cleanRecipeText, type TextCleanup } from '../lib/recipe-text-cleanup';
+import TextCleanupSummary from '../components/TextCleanupSummary';
 
 export default function AddRecipe({ transcribePhoto }: { transcribePhoto?: (base64: string) => Promise<string> } = {}) {
   const { addRecipe, ready } = useRecipes();
@@ -25,9 +27,11 @@ export default function AddRecipe({ transcribePhoto }: { transcribePhoto?: (base
   const [imageBusy, setImageBusy] = useState(false);
   const [imageDraft, setImageDraft] = useState(false);
   const [detailsMessage, setDetailsMessage] = useState('');
+  const [textCleanup, setTextCleanup] = useState<TextCleanup | null>(null);
   const guard = useUnsavedChanges([title, category, tags, servings, prepTime, cookTime, source, content, importUrl].some(Boolean) || importing || imageBusy || imageDraft);
 
   function applyImport(recipe: ImportedRecipe) {
+    setTextCleanup(null);
     if (recipe.title) setTitle(recipe.title);
     if (recipe.category) setCategory(recipe.category);
     if (recipe.tags) setTags(recipe.tags);
@@ -49,6 +53,7 @@ export default function AddRecipe({ transcribePhoto }: { transcribePhoto?: (base
   }
 
   function addPhotoText(text: string) {
+    setTextCleanup(null);
     const combined = content.trim() ? `${content}\n\n${text}` : text;
     setContent(combined);
     fillDetails(combined);
@@ -187,9 +192,17 @@ export default function AddRecipe({ transcribePhoto }: { transcribePhoto?: (base
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={14}
+            spellCheck
+            lang="en"
             required
           />
         </label>
+        <button type="button" disabled={!content.trim()} onClick={() => {
+          const cleaned = cleanRecipeText(content);
+          if (cleaned.text !== content || !textCleanup) setTextCleanup(cleaned);
+          setContent(cleaned.text);
+        }}>Clean up recipe text</button>
+        <TextCleanupSummary cleanup={textCleanup} />
         {error && <p className="error" role="alert">{error}</p>}
         <button type="submit" disabled={submitting || importing || !ready}>
           {submitting ? 'Saving…' : 'Save Recipe'}

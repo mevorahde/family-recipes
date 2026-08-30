@@ -19,6 +19,8 @@ Have a photo or screenshot? Under **Start with a photo**, choose a JPG, PNG, or 
 
 Photo imports also suggest missing recipe details. For text already in the recipe box, select **Fill empty details from text**. Check the suggested title, category, and tags before saving. Servings, times, and source stay blank unless stated in the text, and details you’ve already entered are kept.
 
+Photo text cleanup removes recognizable letterhead above the recipe and corrects common spelling errors. **Compare with original text** shows what was there before cleanup. For text already in the recipe box, use **Clean up recipe text**. Always review the result: unusual handwriting and spelling may still need a manual correction, and quantities are never guessed.
+
 ## Keep the cookbook up to date
 
 1. Sign in and open a recipe.

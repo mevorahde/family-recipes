@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { prepareRecipeImage } from '../lib/image-import';
 import { transcribeRecipeImage } from '../lib/family-features';
+import { cleanRecipeText, type TextCleanup } from '../lib/recipe-text-cleanup';
+import TextCleanupSummary from './TextCleanupSummary';
 
 export default function ImageRecipeImporter({ disabled, onUseText, onBusyChange, onDraftChange, transcribe = transcribeRecipeImage }: {
   disabled: boolean;
@@ -15,11 +17,12 @@ export default function ImageRecipeImporter({ disabled, onUseText, onBusyChange,
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [stage, setStage] = useState('');
+  const [cleanup, setCleanup] = useState<TextCleanup | null>(null);
   function working(value: boolean) { setBusy(value); onBusyChange(value); }
   async function choose(file?: File) {
     if (!file) return;
     working(true); setError(''); setStage('Opening photo…');
-    setImage(null); setText(''); setHasResult(false); onDraftChange(true);
+    setImage(null); setText(''); setHasResult(false); setCleanup(null); onDraftChange(true);
     try { setImage(await prepareRecipeImage(file)); setStage('Photo ready. It hasn’t been sent yet.'); }
     catch (caught) { setError(caught instanceof Error ? caught.message : 'Couldn’t open this photo.'); onDraftChange(false); }
     finally { working(false); }
@@ -27,11 +30,14 @@ export default function ImageRecipeImporter({ disabled, onUseText, onBusyChange,
   async function read() {
     if (!image || busy) return;
     working(true); setError(''); setStage('Reading your photo… this can take a moment.');
-    try { setText(await transcribe(image.imageBase64)); setHasResult(true); setStage('Text ready. Check it against the photo before adding it.'); }
+    try {
+      const cleaned = cleanRecipeText(await transcribe(image.imageBase64));
+      setCleanup(cleaned); setText(cleaned.text); setHasResult(true); setStage('Text ready. Check it against the photo before adding it.');
+    }
     catch (caught) { setStage(''); setError(caught instanceof Error ? caught.message : 'Couldn’t read this photo. Please try again.'); }
     finally { working(false); }
   }
-  function clear() { setImage(null); setText(''); setHasResult(false); setError(''); setStage(''); onDraftChange(false); }
+  function clear() { setImage(null); setText(''); setHasResult(false); setCleanup(null); setError(''); setStage(''); onDraftChange(false); }
   return <section className="image-import import-section" aria-labelledby="image-import-heading" aria-busy={busy}>
     <h2 id="image-import-heading">Start with a photo</h2>
     <p>Use a clear photo or screenshot of a printed or handwritten recipe. Import one page at a time.</p>
@@ -50,7 +56,8 @@ export default function ImageRecipeImporter({ disabled, onUseText, onBusyChange,
       {hasResult && <div className="image-review">
         <h3>Check the recipe text</h3>
         <p>Handwriting can be misread. Double-check ingredient amounts, fractions, temperatures, and cooking times. Nothing is saved yet.</p>
-        <label>Text from the photo<textarea rows={12} value={text} disabled={busy || disabled} onChange={(event) => setText(event.target.value)} /></label>
+        <TextCleanupSummary cleanup={cleanup} />
+        <label>Text from the photo<textarea rows={12} spellCheck lang="en" value={text} disabled={busy || disabled} onChange={(event) => setText(event.target.value)} /></label>
         <button type="button" className="recipe-button recipe-button-primary" disabled={busy || disabled || !text.trim()} onClick={() => { onUseText(text.trim()); clear(); }}>Add text to recipe</button>
         <p>This adds to any recipe text you’ve already entered and suggests any missing details. Check the fields below, then save when ready.</p>
       </div>}
