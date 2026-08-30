@@ -25,6 +25,10 @@ service cloud.firestore {
       return data.keys().hasOnly(['deleted', 'version'])
         && data.deleted == true && data.version is int && data.version >= 1;
     }
+    function notPurged(recipeId) {
+      return !exists(/databases/$(database)/documents/recipes/$(recipeId))
+        || !('purged' in get(/databases/$(database)/documents/recipes/$(recipeId)).data);
+    }
     // Membership is provisioned with administrator credentials, never by the app.
     match /members/{uid} {
       allow get: if request.auth != null && request.auth.uid == uid;
@@ -32,23 +36,23 @@ service cloud.firestore {
     }
     match /recipes/{recipeId} {
       allow read: if true;
-      allow create, update: if familyMember()
+      allow create, update: if familyMember() && notPurged(recipeId)
         && (validRecipe(request.resource.data) || validTombstone(request.resource.data));
       allow delete: if false;
     }
     match /recipeTrash/{recipeId} {
       allow read: if familyMember();
-      allow create, update: if familyMember()
+      allow create, update: if familyMember() && notPurged(recipeId)
         && request.resource.data.keys().hasOnly(['recipe', 'deletedAt', 'actorUid'])
         && validRecipe(request.resource.data.recipe)
         && request.resource.data.actorUid == request.auth.uid
         && request.resource.data.deletedAt == request.time;
-      allow delete: if familyMember()
+      allow delete: if familyMember() && notPurged(recipeId)
         && validRecipe(getAfter(/databases/$(database)/documents/recipes/$(recipeId)).data);
     }
     match /recipeHistory/{recipeId}/versions/{versionId} {
-      allow read: if familyMember();
-      allow create: if familyMember()
+      allow read: if familyMember() && notPurged(recipeId);
+      allow create: if familyMember() && notPurged(recipeId)
         && request.resource.data.keys().hasOnly(['recipe', 'recordedAt', 'actorUid', 'action'])
         && validRecipe(request.resource.data.recipe)
         && request.resource.data.actorUid == request.auth.uid

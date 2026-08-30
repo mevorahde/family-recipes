@@ -75,6 +75,11 @@ export default function Fixture() {
           setRecipes((current) => mergeRecipes(current, [deleted.recipe]));
           setTrash((current) => current.filter((entry) => entry.recipe.slug !== slug));
         },
+        permanentlyDeleteRecipe: async (slug) => {
+          await simulateWrite();
+          setTrash((current) => current.filter((entry) => entry.recipe.slug !== slug));
+          setHistory((current) => ({ ...current, [slug]: [] }));
+        },
         getHistory: async (slug) => { await simulateWrite(); return history[slug] ?? []; },
         restoreVersion: async (slug, id, expected) => {
           await simulateWrite();

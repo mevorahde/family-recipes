@@ -6,6 +6,7 @@ import { useAuth } from './useAuth';
 import { RecipesContext } from './recipes-context';
 import { mergeRecipes, recipeFields, recipeOrder, type StoredRecipe } from '../lib/shared-recipes';
 import { createRecipeStore } from '../lib/recipe-store';
+import { permanentlyDeleteRecipe } from '../lib/family-features';
 import type { DeletedRecipe, Recipe } from '../types';
 
 export function RecipesProvider({ children }: { children: ReactNode }) {
@@ -57,6 +58,7 @@ export function RecipesProvider({ children }: { children: ReactNode }) {
       setTrash({ uid, loading: false, error: '', recipes: snapshot.docs.map((item) => ({
         recipe: { ...recipeFields(item.data().recipe), slug: item.id } as Recipe,
         deletedAt: item.data().deletedAt?.toMillis() ?? 0,
+        purging: item.data().purging === true,
       })).sort((a, b) => b.deletedAt - a.deletedAt) });
     }, () => setTrash({ uid, recipes: [], loading: false, error: 'We couldn’t open Recently deleted. Please try again.' }));
   }, [user, canManage, attempt]);
@@ -85,6 +87,7 @@ export function RecipesProvider({ children }: { children: ReactNode }) {
     reorderRecipes: (slug, direction) => store().move(recipes, slug, direction),
     deleteRecipe: (slug) => store().remove(slug),
     restoreRecipe: (slug) => store().restore(slug),
+    permanentlyDeleteRecipe: async (slug, title) => { store(); await permanentlyDeleteRecipe(slug, title); },
     getHistory: (slug) => store(false).history(slug),
     restoreVersion: (slug, id, version) => store().restoreVersion(slug, id, version),
   }}>{children}</RecipesContext.Provider>;

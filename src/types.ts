@@ -24,4 +24,5 @@ export interface RecipeVersion {
 export interface DeletedRecipe {
   recipe: Recipe;
   deletedAt: number;
+  purging?: boolean;
 }

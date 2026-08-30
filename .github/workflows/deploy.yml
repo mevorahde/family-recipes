@@ -24,6 +24,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: npm --prefix functions ci
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

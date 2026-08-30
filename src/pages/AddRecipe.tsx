@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useUnsavedChanges } from '../context/navigation-context';
 import { useRecipes } from '../context/useRecipes';
 import { importRecipeFile, importRecipeUrl, type ImportedRecipe } from '../lib/recipe-import';
+import ImageRecipeImporter from '../components/ImageRecipeImporter';
 
 export default function AddRecipe() {
   const { addRecipe, ready } = useRecipes();
@@ -20,7 +21,9 @@ export default function AddRecipe() {
   const [submitting, setSubmitting] = useState(false);
   const [importUrl, setImportUrl] = useState('');
   const [importing, setImporting] = useState(false);
-  const guard = useUnsavedChanges([title, category, tags, servings, prepTime, cookTime, source, content, importUrl].some(Boolean) || importing);
+  const [imageBusy, setImageBusy] = useState(false);
+  const [imageDraft, setImageDraft] = useState(false);
+  const guard = useUnsavedChanges([title, category, tags, servings, prepTime, cookTime, source, content, importUrl].some(Boolean) || importing || imageBusy || imageDraft);
 
   function applyImport(recipe: ImportedRecipe) {
     if (recipe.title) setTitle(recipe.title);
@@ -63,7 +66,8 @@ export default function AddRecipe() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (submitting || importing || !ready) return;
+    if (submitting || importing || imageBusy || !ready) return;
+    if (imageDraft) { setError('Add the reviewed photo text to the recipe, or discard the photo, before saving.'); return; }
     if (!title.trim() || !content.trim()) { setError('Please add a title and recipe before saving.'); return; }
     setError(null);
     setSubmitting(true);
@@ -93,8 +97,9 @@ export default function AddRecipe() {
   return (
     <div className="page">
       <h1>Add a Recipe</h1>
+      <ImageRecipeImporter disabled={submitting || importing || !ready} onBusyChange={setImageBusy} onDraftChange={setImageDraft} onUseText={(text) => setContent((current) => current.trim() ? `${current}\n\n${text}` : text)} />
       <form className="form" onSubmit={handleSubmit}>
-        <fieldset disabled={submitting || importing} className="recipe-form-fields">
+        <fieldset disabled={submitting || importing || imageBusy} className="recipe-form-fields">
         <legend className="visually-hidden">New recipe details</legend>
         <fieldset className="import-section" disabled={importing || submitting}>
           <legend>Import a recipe</legend>

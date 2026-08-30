@@ -19,6 +19,7 @@ export interface RecipesContextValue {
   reorderRecipes: (slug: string, direction: 'up' | 'down') => Promise<void>;
   deleteRecipe: (slug: string) => Promise<void>;
   restoreRecipe: (slug: string) => Promise<void>;
+  permanentlyDeleteRecipe: (slug: string, confirmedTitle: string) => Promise<void>;
   getHistory: (slug: string) => Promise<RecipeVersion[]>;
   restoreVersion: (slug: string, id: string, expectedVersion: number) => Promise<void>;
 }

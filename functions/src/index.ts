@@ -2,6 +2,7 @@ import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
 import * as cheerio from 'cheerio';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
+export { permanentlyDeleteRecipe, importRecipeImage } from './family-features.js';
 
 type RecipeData = Record<string, unknown>;
 

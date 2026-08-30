@@ -15,6 +15,8 @@ Browse the cookbook, search by recipe name or tag, or choose a category. You don
 3. Enter the recipe details, or import a Word document, saved email, or recipe website.
 4. Check the details and select **Save Recipe**.
 
+Have a photo or screenshot? Under **Start with a photo**, choose a JPG, PNG, or WebP image and select **Read photo**. Your photo is sent to Google to read the text, but isn’t saved in the cookbook. Review the text carefully—especially handwriting, amounts, and temperatures—then select **Add text to recipe**. You can add more pages the same way before saving.
+
 ## Keep the cookbook up to date
 
 1. Sign in and open a recipe.
@@ -25,6 +27,8 @@ Browse the cookbook, search by recipe name or tag, or choose a category. You don
 We can both update any recipe, no matter who added it. Changes are shared, so we’ll always see the same cookbook.
 
 Deleted something by mistake? Open **Recently deleted** and select **Restore recipe**.
+
+To remove it for good from the app, choose **Delete permanently** and confirm. This also removes its saved versions and cannot be undone in the app. Existing backups and original recipe files are not erased.
 
 To recover earlier wording, open a recipe and choose **Previous versions**. You can preview an older version before restoring it.
 

@@ -363,6 +363,16 @@ h1 {
 .recovery-list { list-style: none; padding: 0; }
 .recovery-list li { display: flex; gap: 20px; align-items: center; justify-content: space-between; padding: 20px 0; border-bottom: 1px solid #dacdbb; }
 .recovery-list h2 { margin: 0; }
+.recovery-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.image-import { margin: 24px 0; padding: 24px; border: 1px solid #dacdbb; border-radius: 16px; background: #fffaf1; }
+.image-import h2 { margin-top: 0; }
+.image-file-label, .image-review label { display: flex; flex-direction: column; gap: 8px; }
+.image-import input[type=file] { max-width: 100%; }
+.import-privacy { font-size: 0.9rem; color: #665b4e; }
+.recipe-photo-preview { display: block; max-width: 100%; max-height: 480px; object-fit: contain; margin: 16px auto; }
+.image-review { margin-top: 20px; }
+.image-review textarea { width: 100%; box-sizing: border-box; resize: vertical; }
+@media (max-width: 600px) { .recovery-list li { align-items: flex-start; flex-direction: column; } .image-import { padding: 16px; } }
 .recipe-form-fields { border: 0; padding: 0; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
 
 @media print {
