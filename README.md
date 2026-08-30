@@ -17,6 +17,8 @@ Browse the cookbook, search by recipe name or tag, or choose a category. You don
 
 Have a photo or screenshot? Under **Start with a photo**, choose a JPG, PNG, or WebP image and select **Read photo**. Your photo is sent to Google to read the text, but isn’t saved in the cookbook. Review the text carefully—especially handwriting, amounts, and temperatures—then select **Add text to recipe**. You can add more pages the same way before saving.
 
+Photo imports also suggest missing recipe details. For text already in the recipe box, select **Fill empty details from text**. Check the suggested title, category, and tags before saving. Servings, times, and source stay blank unless stated in the text, and details you’ve already entered are kept.
+
 ## Keep the cookbook up to date
 
 1. Sign in and open a recipe.

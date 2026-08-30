@@ -98,7 +98,7 @@ export default function Fixture() {
 const router = createHashRouter([{ element: <Fixture />, children: [
   { path: '/', element: <Home /> },
   { path: '/recipe/:slug', element: <RecipeDetail /> },
-  { path: '/add-recipe', element: <ProtectedRoute><AddRecipe /></ProtectedRoute> },
+  { path: '/add-recipe', element: <ProtectedRoute><AddRecipe transcribePhoto={async () => 'Fried Rice\n2 eggs\n3 cups rice'} /></ProtectedRoute> },
   { path: '/recently-deleted', element: <ProtectedRoute><RecentlyDeleted /></ProtectedRoute> },
   { path: '/login', element: <p>Local sign-in fixture</p> },
 ]}]);

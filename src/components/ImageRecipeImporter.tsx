@@ -52,7 +52,7 @@ export default function ImageRecipeImporter({ disabled, onUseText, onBusyChange,
         <p>Handwriting can be misread. Double-check ingredient amounts, fractions, temperatures, and cooking times. Nothing is saved yet.</p>
         <label>Text from the photo<textarea rows={12} value={text} disabled={busy || disabled} onChange={(event) => setText(event.target.value)} /></label>
         <button type="button" className="recipe-button recipe-button-primary" disabled={busy || disabled || !text.trim()} onClick={() => { onUseText(text.trim()); clear(); }}>Add text to recipe</button>
-        <p>This adds to any recipe text you’ve already entered. Add a title below, then save when ready.</p>
+        <p>This adds to any recipe text you’ve already entered and suggests any missing details. Check the fields below, then save when ready.</p>
       </div>}
     </>}
   </section>;

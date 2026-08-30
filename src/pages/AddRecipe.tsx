@@ -4,8 +4,9 @@ import { useUnsavedChanges } from '../context/navigation-context';
 import { useRecipes } from '../context/useRecipes';
 import { importRecipeFile, importRecipeUrl, type ImportedRecipe } from '../lib/recipe-import';
 import ImageRecipeImporter from '../components/ImageRecipeImporter';
+import { detailLabels, emptyDetailSuggestions, type RecipeDetails } from '../lib/recipe-suggestions';
 
-export default function AddRecipe() {
+export default function AddRecipe({ transcribePhoto }: { transcribePhoto?: (base64: string) => Promise<string> } = {}) {
   const { addRecipe, ready } = useRecipes();
   const navigate = useNavigate();
 
@@ -23,6 +24,7 @@ export default function AddRecipe() {
   const [importing, setImporting] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const [imageDraft, setImageDraft] = useState(false);
+  const [detailsMessage, setDetailsMessage] = useState('');
   const guard = useUnsavedChanges([title, category, tags, servings, prepTime, cookTime, source, content, importUrl].some(Boolean) || importing || imageBusy || imageDraft);
 
   function applyImport(recipe: ImportedRecipe) {
@@ -34,6 +36,22 @@ export default function AddRecipe() {
     if (recipe.cookTime) setCookTime(recipe.cookTime);
     if (recipe.source) setSource(recipe.source);
     setContent(recipe.content);
+  }
+
+  function fillDetails(text: string) {
+    const suggestions = emptyDetailSuggestions({ title, category, tags, servings, prepTime, cookTime, source }, text);
+    const setters = { title: setTitle, category: setCategory, tags: setTags, servings: setServings, prepTime: setPrepTime, cookTime: setCookTime, source: setSource };
+    const fields = Object.keys(suggestions) as (keyof RecipeDetails)[];
+    for (const field of fields) setters[field](suggestions[field]!);
+    setDetailsMessage(fields.length
+      ? `Suggested ${fields.map((field) => detailLabels[field]).join(', ')}. Please check them below. Your existing details and recipe text were kept.`
+      : 'No additional details found for the empty fields. You can enter them yourself; nothing was changed.');
+  }
+
+  function addPhotoText(text: string) {
+    const combined = content.trim() ? `${content}\n\n${text}` : text;
+    setContent(combined);
+    fillDetails(combined);
   }
 
   async function handleFileImport(file: File | undefined) {
@@ -97,7 +115,7 @@ export default function AddRecipe() {
   return (
     <div className="page">
       <h1>Add a Recipe</h1>
-      <ImageRecipeImporter disabled={submitting || importing || !ready} onBusyChange={setImageBusy} onDraftChange={setImageDraft} onUseText={(text) => setContent((current) => current.trim() ? `${current}\n\n${text}` : text)} />
+      <ImageRecipeImporter disabled={submitting || importing || !ready} onBusyChange={setImageBusy} onDraftChange={setImageDraft} onUseText={addPhotoText} transcribe={transcribePhoto} />
       <form className="form" onSubmit={handleSubmit}>
         <fieldset disabled={submitting || importing || imageBusy} className="recipe-form-fields">
         <legend className="visually-hidden">New recipe details</legend>
@@ -126,6 +144,13 @@ export default function AddRecipe() {
             </button>
           </div>
         </fieldset>
+        <section className="import-section" aria-labelledby="suggest-details-heading">
+          <h2 id="suggest-details-heading">A little help with the details</h2>
+          <p>Use the recipe text to suggest a title, category, and tags. Servings, times, and source are filled only when clearly stated. Existing fields are never replaced.</p>
+          <button type="button" onClick={() => fillDetails(content)} disabled={!content.trim()}>Fill empty details from text</button>
+          <p>Suggestions are made on this device. Check or change them before saving; categories and tags are suggestions, not dietary advice.</p>
+          <p role="status">{detailsMessage}</p>
+        </section>
         <label>
           Title
           <input value={title} onChange={(e) => setTitle(e.target.value)} required />
