@@ -140,10 +140,12 @@ function RecipeDetailContent({ slug }: { slug: string | undefined }) {
 
   return (
     <div className="page">
-      <Link to="/" className="back-link">
-        ← Back to all recipes
-      </Link>
-      {!editing && <button className="recipe-button print-button" type="button" onClick={() => window.print()}>Print recipe</button>}
+      <div className="recipe-topbar">
+        <Link to="/" className="back-link">
+          ← Back to all recipes
+        </Link>
+        {!editing && <button className="recipe-button print-button" type="button" onClick={() => window.print()}>Print recipe</button>}
+      </div>
       {canManage && (
         <section className="recipe-tools" aria-labelledby="recipe-tools-heading" aria-busy={busy}>
           <div className="recipe-tools-intro">
