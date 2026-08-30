@@ -353,6 +353,29 @@ h1 {
 }
 
 .recipe-notice:empty { margin: 0; }
+.sync-status { padding: 12px 24px; background: #fff2d8; color: #593c1c; text-align: center; }
+.print-button { float: right; margin-bottom: 16px; }
+.recipe-history { margin-top: 32px; border-top: 1px solid #dacdbb; padding-top: 24px; }
+.recipe-history details { padding: 16px 0; border-bottom: 1px solid #dacdbb; }
+.recipe-history summary { cursor: pointer; font-weight: 600; }
+.unsaved-dialog { max-width: min(480px, 90vw); border: 1px solid #dacdbb; border-radius: 16px; padding: 28px; background: #fffaf1; color: #49372b; }
+.unsaved-dialog::backdrop { background: #21160e88; }
+.recovery-list { list-style: none; padding: 0; }
+.recovery-list li { display: flex; gap: 20px; align-items: center; justify-content: space-between; padding: 20px 0; border-bottom: 1px solid #dacdbb; }
+.recovery-list h2 { margin: 0; }
+.recipe-form-fields { border: 0; padding: 0; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+
+@media print {
+  @page { margin: 18mm; }
+  body, #root { background: white !important; color: black !important; }
+  .navbar, .sync-status, .back-link, .recipe-tools, .recipe-history, .print-button, .recipe-notice, .error { display: none !important; }
+  .page { max-width: none; margin: 0; padding: 0; }
+  .print-recipe { font-size: 12pt; line-height: 1.5; }
+  .print-recipe h1 { font-size: 24pt; }
+  .print-recipe h1, .print-recipe h2, .print-recipe h3 { break-after: avoid; color: black; }
+  .print-recipe img { max-width: 100%; break-inside: avoid; }
+  .print-recipe p, .print-recipe li { orphans: 3; widows: 3; }
+}
 .recipe-edit-form h1 { margin: 0; }
 .recipe-edit-form fieldset {
   display: flex;

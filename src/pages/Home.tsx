@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useRecipes } from '../context/useRecipes';
 
 export default function Home() {
-  const { recipes } = useRecipes();
+  const { recipes, loading } = useRecipes();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('All');
   const categories = useMemo(
@@ -24,11 +24,12 @@ export default function Home() {
       <div className="controls">
         <input
           type="text"
+          aria-label="Search recipes by name or tag"
           placeholder="Search by name or tag..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <select value={category} onChange={(e) => setCategory(e.target.value)}>
+        <select aria-label="Recipe category" value={category} onChange={(e) => setCategory(e.target.value)}>
           {categories.map((c) => (
             <option key={c} value={c}>
               {c}
@@ -38,7 +39,7 @@ export default function Home() {
       </div>
 
       {filtered.length === 0 ? (
-        <p>No recipes found.</p>
+        <p>{loading ? 'Opening the cookbook…' : 'No recipes found.'}</p>
       ) : (
         <ul className="recipe-list">
           {filtered.map((recipe) => (

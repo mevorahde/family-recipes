@@ -1,149 +1,91 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  onSnapshot,
-  runTransaction,
-  serverTimestamp,
-  setDoc,
-} from 'firebase/firestore';
+import { collection, doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { recipes as staticRecipes } from '../lib/recipes';
 import { useAuth } from './useAuth';
-import { RecipesContext, type NewRecipeInput } from './recipes-context';
-import { mergeRecipes, planRecipeMove, recipeFields, recipeOrder, type StoredRecipe } from '../lib/shared-recipes';
-
-const RECIPES_COLLECTION = 'recipes';
+import { RecipesContext } from './recipes-context';
+import { mergeRecipes, recipeFields, recipeOrder, type StoredRecipe } from '../lib/shared-recipes';
+import { createRecipeStore } from '../lib/recipe-store';
+import type { DeletedRecipe, Recipe } from '../types';
 
 export function RecipesProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [dbRecipes, setDbRecipes] = useState<StoredRecipe[]>([]);
   const [loading, setLoading] = useState(Boolean(db));
+  const [synced, setSynced] = useState(false);
+  const [error, setError] = useState('');
+  const [online, setOnline] = useState(navigator.onLine);
+  const [attempt, setAttempt] = useState(0);
+  const [access, setAccess] = useState({ uid: '', allowed: false, checked: false, error: '' });
+  const [trash, setTrash] = useState<{ uid: string; recipes: DeletedRecipe[]; loading: boolean; error: string }>({ uid: '', recipes: [], loading: true, error: '' });
+  const canManage = Boolean(user && access.uid === user.uid && access.allowed);
+  const accessLoading = authLoading || Boolean(user && (access.uid !== user.uid || !access.checked));
+
+  useEffect(() => {
+    const update = () => setOnline(navigator.onLine);
+    window.addEventListener('online', update);
+    window.addEventListener('offline', update);
+    return () => { window.removeEventListener('online', update); window.removeEventListener('offline', update); };
+  }, []);
 
   useEffect(() => {
     if (!db) return;
-    // Include tombstones, which may have no title, as well as legacy unordered recipes.
-    const q = collection(db, RECIPES_COLLECTION);
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        setDbRecipes(
-          snapshot.docs.map((doc) => {
-            const data = doc.data();
-            return {
-              slug: doc.id,
-              title: data.title,
-              category: data.category,
-              tags: data.tags ?? [],
-              servings: data.servings,
-              prepTime: data.prepTime,
-              cookTime: data.cookTime,
-              source: data.source,
-              content: data.content,
-              order: typeof data.order === 'number' ? data.order : 0,
-              createdBy: data.createdBy,
-              createdByEmail: data.createdByEmail,
-              deleted: data.deleted === true,
-            } satisfies StoredRecipe;
-          }),
-        );
-        setLoading(false);
-      },
-      () => setLoading(false),
-    );
-    return unsubscribe;
-  }, []);
+    return onSnapshot(collection(db, 'recipes'), { includeMetadataChanges: true }, (snapshot) => {
+      setDbRecipes(snapshot.docs.map((item) => ({ ...recipeFields(item.data()), slug: item.id, deleted: item.data().deleted === true } as StoredRecipe)));
+      setLoading(false);
+      setSynced(!snapshot.metadata.fromCache && !snapshot.metadata.hasPendingWrites);
+      setError('');
+    }, () => {
+      setLoading(false);
+      setSynced(false);
+      setError('We couldn’t load the latest cookbook. The recipes below may be incomplete.');
+    });
+  }, [attempt]);
+
+  useEffect(() => {
+    if (!db || !user) return;
+    const uid = user.uid;
+    return onSnapshot(doc(db, 'members', uid), (snapshot) => {
+      setAccess({ uid, allowed: snapshot.data()?.enabled === true, checked: true, error: '' });
+    }, () => setAccess({ uid, allowed: false, checked: true, error: 'We couldn’t check your family access. Please try again.' }));
+  }, [user, attempt]);
+
+  useEffect(() => {
+    if (!db || !user || !canManage) return;
+    const uid = user.uid;
+    return onSnapshot(collection(db, 'recipeTrash'), (snapshot) => {
+      setTrash({ uid, loading: false, error: '', recipes: snapshot.docs.map((item) => ({
+        recipe: { ...recipeFields(item.data().recipe), slug: item.id } as Recipe,
+        deletedAt: item.data().deletedAt?.toMillis() ?? 0,
+      })).sort((a, b) => b.deletedAt - a.deletedAt) });
+    }, () => setTrash({ uid, recipes: [], loading: false, error: 'We couldn’t open Recently deleted. Please try again.' }));
+  }, [user, canManage, attempt]);
 
   const recipes = useMemo(() => mergeRecipes(staticRecipes, dbRecipes), [dbRecipes]);
-
-  async function addRecipe(recipe: NewRecipeInput) {
-    if (!db) {
-      throw new Error('Firebase is not configured; cannot save recipes.');
-    }
-    if (!user) throw new Error('Sign in to save recipes.');
-    const nextOrder = Math.max(...recipes.map(recipeOrder), 0) + 1;
-    await addDoc(collection(db, RECIPES_COLLECTION), {
-      ...recipeFields(recipe),
-      order: nextOrder,
-      createdBy: user?.uid ?? null,
-      createdAt: serverTimestamp(),
-    });
+  const ready = Boolean(db && online && synced && !loading && !error);
+  function store(write = true) {
+    if (!db || !user || !canManage) throw new Error('Only invited family members can change this cookbook.');
+    if (write && !ready) throw new Error('Please wait for the cookbook to reconnect. Your changes have not been saved.');
+    return createRecipeStore(db, user.uid, staticRecipes);
   }
+  const syncMessage = !db ? 'This cookbook is in read-only mode.'
+    : !online ? 'You’re offline. You can browse loaded recipes, but changes can’t be saved yet.'
+      : error || (loading ? 'Opening the family cookbook…' : !synced ? 'Connecting to the latest cookbook…' : '')
+        || (user && access.uid === user.uid ? access.error : '')
+        || (user && !accessLoading && !canManage ? 'You’re signed in, but this account isn’t invited to change the cookbook.' : '');
 
-  async function updateRecipe(slug: string, recipe: Partial<NewRecipeInput>) {
-    if (!db) {
-      throw new Error('Firebase is not configured; cannot update recipes.');
-    }
-    if (!user) throw new Error('Sign in to update recipes.');
-    const existing = recipes.find((current) => current.slug === slug);
-    if (!existing) throw new Error('Recipe not found.');
-    const recipeRef = doc(db, RECIPES_COLLECTION, slug);
-    await runTransaction(db, async (transaction) => {
-      const snapshot = await transaction.get(recipeRef);
-      if (snapshot.data()?.deleted) throw new Error('This recipe was deleted.');
-      if (snapshot.exists()) {
-        transaction.update(recipeRef, recipeFields(recipe));
-      } else {
-        if (!staticRecipes.some((current) => current.slug === slug)) {
-          throw new Error('This recipe was deleted.');
-        }
-        transaction.set(recipeRef, {
-          ...recipeFields(existing),
-          ...recipeFields(recipe),
-          order: recipeOrder(existing),
-          createdBy: user.uid,
-          createdAt: serverTimestamp(),
-        });
-      }
-    });
-  }
-
-  async function reorderRecipes(slug: string, direction: 'up' | 'down') {
-    if (!db) throw new Error('Firebase is not configured; cannot reorder recipes.');
-    if (!user) throw new Error('Sign in to reorder recipes.');
-    const changes = planRecipeMove(recipes, slug, direction);
-    if (!changes.length) return;
-    // Keep normalization and movement atomic; never leave a partially reordered list.
-    if (changes.length > 500) throw new Error('This archive needs an order migration before moving recipes.');
-    const refs = changes.map(({ recipe }) => doc(db!, RECIPES_COLLECTION, recipe.slug));
-    await runTransaction(db, async (transaction) => {
-      const snapshots = await Promise.all(refs.map((ref) => transaction.get(ref)));
-      changes.forEach(({ recipe, order }, index) => {
-        const snapshot = snapshots[index];
-        if (snapshot.data()?.deleted) throw new Error('A recipe was deleted. Refresh and try again.');
-        if (snapshot.exists()) {
-          transaction.update(refs[index], { order });
-        } else {
-          if (!staticRecipes.some((current) => current.slug === recipe.slug)) {
-            throw new Error('A recipe was deleted. Refresh and try again.');
-          }
-          transaction.set(refs[index], {
-            ...recipeFields(recipe), order, createdBy: user.uid, createdAt: serverTimestamp(),
-          });
-        }
-      });
-    });
-  }
-
-  async function deleteRecipe(slug: string) {
-    if (!db) {
-      throw new Error('Firebase is not configured; cannot delete recipes.');
-    }
-    if (!user) throw new Error('Sign in to delete recipes.');
-    const recipeRef = doc(db, RECIPES_COLLECTION, slug);
-    if (staticRecipes.some((recipe) => recipe.slug === slug)) {
-      // Persist a tombstone so the bundled markdown does not reappear on reload.
-      await setDoc(recipeRef, { deleted: true }, { merge: true });
-    } else {
-      await deleteDoc(recipeRef);
-    }
-  }
-
-  return (
-    <RecipesContext.Provider value={{ recipes, loading, addRecipe, updateRecipe, reorderRecipes, deleteRecipe }}>
-      {children}
-    </RecipesContext.Provider>
-  );
+  return <RecipesContext.Provider value={{
+    recipes, loading, canManage, accessLoading, ready, syncMessage,
+    retry: () => setAttempt((value) => value + 1),
+    deletedRecipes: canManage && trash.uid === user?.uid ? trash.recipes : [],
+    trashLoading: canManage && (trash.uid !== user?.uid || trash.loading),
+    trashError: canManage && trash.uid === user?.uid ? trash.error : '',
+    addRecipe: (recipe) => store().add(recipe, Math.max(...recipes.map(recipeOrder), 0) + 1),
+    updateRecipe: (slug, recipe, version) => store().update(slug, recipe, version),
+    reorderRecipes: (slug, direction) => store().move(recipes, slug, direction),
+    deleteRecipe: (slug) => store().remove(slug),
+    restoreRecipe: (slug) => store().restore(slug),
+    getHistory: (slug) => store(false).history(slug),
+    restoreVersion: (slug, id, version) => store().restoreVersion(slug, id, version),
+  }}>{children}</RecipesContext.Provider>;
 }

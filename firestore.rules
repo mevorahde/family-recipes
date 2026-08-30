@@ -1,12 +1,60 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Public reading; any signed-in user can add, edit, reorder, or delete recipes.
+    function familyMember() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/members/$(request.auth.uid))
+        && get(/databases/$(database)/documents/members/$(request.auth.uid)).data.enabled == true;
+    }
+    function validRecipe(data) {
+      return data.keys().hasOnly(['title', 'category', 'tags', 'content', 'servings', 'prepTime', 'cookTime', 'source', 'order', 'createdBy', 'version'])
+        && data.keys().hasAll(['title', 'category', 'tags', 'content'])
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 500
+        && data.category is string && data.category.size() <= 500
+        && data.content is string && data.content.size() > 0 && data.content.size() <= 500000
+        && data.tags is list && data.tags.size() <= 100
+        && (!('servings' in data) || data.servings is string)
+        && (!('prepTime' in data) || data.prepTime is string)
+        && (!('cookTime' in data) || data.cookTime is string)
+        && (!('source' in data) || data.source is string)
+        && (!('order' in data) || data.order is number)
+        && (!('createdBy' in data) || data.createdBy is string)
+        && (!('version' in data) || (data.version is int && data.version >= 0));
+    }
+    function validTombstone(data) {
+      return data.keys().hasOnly(['deleted', 'version'])
+        && data.deleted == true && data.version is int && data.version >= 1;
+    }
+    // Membership is provisioned with administrator credentials, never by the app.
+    match /members/{uid} {
+      allow get: if request.auth != null && request.auth.uid == uid;
+      allow list, write: if false;
+    }
     match /recipes/{recipeId} {
       allow read: if true;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null;
-      allow delete: if request.auth != null;
+      allow create, update: if familyMember()
+        && (validRecipe(request.resource.data) || validTombstone(request.resource.data));
+      allow delete: if false;
+    }
+    match /recipeTrash/{recipeId} {
+      allow read: if familyMember();
+      allow create, update: if familyMember()
+        && request.resource.data.keys().hasOnly(['recipe', 'deletedAt', 'actorUid'])
+        && validRecipe(request.resource.data.recipe)
+        && request.resource.data.actorUid == request.auth.uid
+        && request.resource.data.deletedAt == request.time;
+      allow delete: if familyMember()
+        && validRecipe(getAfter(/databases/$(database)/documents/recipes/$(recipeId)).data);
+    }
+    match /recipeHistory/{recipeId}/versions/{versionId} {
+      allow read: if familyMember();
+      allow create: if familyMember()
+        && request.resource.data.keys().hasOnly(['recipe', 'recordedAt', 'actorUid', 'action'])
+        && validRecipe(request.resource.data.recipe)
+        && request.resource.data.actorUid == request.auth.uid
+        && request.resource.data.recordedAt == request.time
+        && request.resource.data.action in ['edit', 'delete', 'restore', 'restore-version'];
+      allow update, delete: if false;
     }
   }
 }

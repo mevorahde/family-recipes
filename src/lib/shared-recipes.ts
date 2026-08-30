@@ -1,4 +1,4 @@
-import type { Recipe } from '../types';
+import type { Recipe } from '../types.ts';
 
 export type StoredRecipe = Recipe & { deleted?: boolean };
 
@@ -32,7 +32,12 @@ export function planRecipeMove(recipes: Recipe[], slug: string, direction: 'up' 
 
 // Firestore rejects undefined values. Keep explicit empty strings to clear form fields.
 export function recipeFields(recipe: Partial<Recipe>): Record<string, unknown> {
+  const allowed = new Set(['title', 'category', 'tags', 'servings', 'prepTime', 'cookTime', 'source', 'content', 'order', 'createdBy', 'version']);
   return Object.fromEntries(
-    Object.entries(recipe).filter(([key, value]) => key !== 'slug' && value !== undefined),
+    Object.entries(recipe).filter(([key, value]) => allowed.has(key) && value !== undefined),
   );
+}
+
+export function recipeVersion(recipe: Partial<Recipe>): number {
+  return Number.isSafeInteger(recipe.version) && recipe.version! >= 0 ? recipe.version! : 0;
 }

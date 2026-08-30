@@ -11,5 +11,17 @@ export interface Recipe {
   order?: number;
   // present only for recipes added via the site (stored in Firestore)
   createdBy?: string;
-  createdByEmail?: string;
+  version?: number;
+}
+
+export interface RecipeVersion {
+  id: string;
+  recipe: Recipe;
+  action: string;
+  recordedAt: number;
+}
+
+export interface DeletedRecipe {
+  recipe: Recipe;
+  deletedAt: number;
 }

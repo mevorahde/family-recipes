@@ -5,6 +5,10 @@ import { mergeRecipes, planRecipeMove, recipeFields } from '../src/lib/shared-re
 const recipe = (slug, order) => ({ slug, title: slug, category: 'Family', tags: [], content: 'Mix and bake.', order });
 const slugs = (recipes) => recipes.map((entry) => entry.slug);
 
+test('recipe payloads never copy email addresses or unknown legacy metadata', () => {
+  assert.deepEqual(recipeFields({ title: 'Cake', createdByEmail: 'private@example.test', deleted: true, arbitrary: 'private' }), { title: 'Cake' });
+});
+
 test('Firestore edits replace built-in recipes by slug without duplicates', () => {
   const merged = mergeRecipes([recipe('Apple'), recipe('Bread')], [{ ...recipe('Apple'), title: 'Apple cake' }]);
   assert.equal(merged.length, 2);

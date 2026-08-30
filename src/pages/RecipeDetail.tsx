@@ -1,8 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { useAuth } from '../context/useAuth';
 import { useRecipes } from '../context/useRecipes';
+import { useUnsavedChanges } from '../context/navigation-context';
+import RecipeHistory from '../components/RecipeHistory';
+import { recipeVersion } from '../lib/shared-recipes';
+import type { Recipe } from '../types';
 
 export default function RecipeDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -10,13 +13,15 @@ export default function RecipeDetail() {
 }
 
 function RecipeDetailContent({ slug }: { slug: string | undefined }) {
-  const { user } = useAuth();
-  const { recipes, loading, deleteRecipe, reorderRecipes, updateRecipe } = useRecipes();
+  const { recipes, loading, canManage, ready, deleteRecipe, reorderRecipes, updateRecipe } = useRecipes();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
   const [pending, setPending] = useState<'save' | 'delete' | 'up' | 'down' | null>(null);
   const [editing, setEditing] = useState(false);
+  const [baseline, setBaseline] = useState('');
+  const [editVersion, setEditVersion] = useState(0);
+  const [draftRecipe, setDraftRecipe] = useState<Recipe | undefined>();
   const [form, setForm] = useState({
     title: '',
     category: '',
@@ -27,8 +32,9 @@ function RecipeDetailContent({ slug }: { slug: string | undefined }) {
     source: '',
     content: '',
   });
-  const recipe = slug ? recipes.find((r) => r.slug === slug) : undefined;
-  const canManage = Boolean(user);
+  const liveRecipe = slug ? recipes.find((r) => r.slug === slug) : undefined;
+  const recipe = liveRecipe ?? (editing ? draftRecipe : undefined);
+  const guard = useUnsavedChanges(editing && JSON.stringify(form) !== baseline);
   const busy = pending !== null;
 
   const index = useMemo(
@@ -40,7 +46,7 @@ function RecipeDetailContent({ slug }: { slug: string | undefined }) {
     if (!recipe || busy) return;
     setError(null);
     setNotice('');
-    setForm({
+    const nextForm = {
       title: recipe.title,
       category: recipe.category,
       tags: recipe.tags.join(', '),
@@ -49,12 +55,16 @@ function RecipeDetailContent({ slug }: { slug: string | undefined }) {
       cookTime: recipe.cookTime ?? '',
       source: recipe.source ?? '',
       content: recipe.content,
-    });
+    };
+    setForm(nextForm);
+    setBaseline(JSON.stringify(nextForm));
+    setEditVersion(recipeVersion(recipe));
+    setDraftRecipe(recipe);
     setEditing(true);
   }
 
   async function handleDelete() {
-    if (!recipe || !canManage || busy || !window.confirm(`Delete "${recipe.title}" from our family cookbook? This removes it for everyone.`)) return;
+    if (!recipe || !canManage || busy || !window.confirm(`Move "${recipe.title}" to Recently deleted? You can restore it later.`)) return;
 
     setError(null);
     setNotice('');
@@ -108,11 +118,12 @@ function RecipeDetailContent({ slug }: { slug: string | undefined }) {
         cookTime: form.cookTime.trim(),
         source: form.source.trim(),
         content: form.content,
-      });
+      }, editVersion);
+      guard.markSaved();
       setEditing(false);
       setNotice('Changes saved for everyone.');
-    } catch {
-      setError('We couldn’t save your changes. Your edits are still here—please try again.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'We couldn’t save your changes. Your edits are still here—please try again.');
     } finally {
       setPending(null);
     }
@@ -132,6 +143,7 @@ function RecipeDetailContent({ slug }: { slug: string | undefined }) {
       <Link to="/" className="back-link">
         ← Back to all recipes
       </Link>
+      {!editing && <button className="recipe-button print-button" type="button" onClick={() => window.print()}>Print recipe</button>}
       {canManage && (
         <section className="recipe-tools" aria-labelledby="recipe-tools-heading" aria-busy={busy}>
           <div className="recipe-tools-intro">
@@ -142,21 +154,21 @@ function RecipeDetailContent({ slug }: { slug: string | undefined }) {
             <span className="recipe-position">Recipe {index + 1} of {recipes.length}</span>
           </div>
           <div className="recipe-tools-actions">
-            <button className="recipe-button recipe-button-primary" type="button" onClick={startEditing} disabled={busy || editing || loading}>
+            <button className="recipe-button recipe-button-primary" type="button" onClick={startEditing} disabled={busy || editing || loading || !ready}>
               <span aria-hidden="true">✎</span> {editing ? 'Editing recipe' : 'Edit recipe'}
             </button>
             <div className="recipe-order" role="group" aria-label="Recipe order in the full cookbook">
               <span className="recipe-order-label">In the cookbook</span>
               <div className="recipe-order-buttons">
-                <button className="recipe-button" type="button" onClick={() => void handleMove('up')} disabled={busy || editing || loading || index <= 0}>
+                <button className="recipe-button" type="button" onClick={() => void handleMove('up')} disabled={busy || editing || loading || !ready || index <= 0}>
                   <span aria-hidden="true">↑</span> {pending === 'up' ? 'Moving…' : 'Move up'}
                 </button>
-                <button className="recipe-button" type="button" onClick={() => void handleMove('down')} disabled={busy || editing || loading || index < 0 || index >= recipes.length - 1}>
+                <button className="recipe-button" type="button" onClick={() => void handleMove('down')} disabled={busy || editing || loading || !ready || index < 0 || index >= recipes.length - 1}>
                   <span aria-hidden="true">↓</span> {pending === 'down' ? 'Moving…' : 'Move down'}
                 </button>
               </div>
             </div>
-            <button className="recipe-button recipe-button-delete" type="button" onClick={handleDelete} disabled={busy || editing || loading}>
+            <button className="recipe-button recipe-button-delete" type="button" onClick={handleDelete} disabled={busy || editing || loading || !ready}>
               {pending === 'delete' ? 'Deleting…' : 'Delete recipe'}
             </button>
           </div>
@@ -165,7 +177,7 @@ function RecipeDetailContent({ slug }: { slug: string | undefined }) {
       {error && <p className="error" role="alert">{error}</p>}
       <p className="recipe-notice" role="status">{notice}</p>
       {!editing || !canManage ? (
-        <>
+        <section className="print-recipe">
           <h1>{recipe.title}</h1>
           <div className="meta">
             <span>{recipe.category}</span>
@@ -177,11 +189,12 @@ function RecipeDetailContent({ slug }: { slug: string | undefined }) {
           <article className="recipe-content">
             <ReactMarkdown>{recipe.content}</ReactMarkdown>
           </article>
-        </>
+        </section>
       ) : (
         <form className="form recipe-edit-form" onSubmit={handleSave} aria-busy={pending === 'save'}>
           <h1>Edit recipe</h1>
           <p className="recipe-edit-note">Keep the memories, add your notes. Your updates will appear in everyone’s cookbook.</p>
+          {!liveRecipe && <p className="error" role="alert">This recipe was deleted while you were editing. Your draft is still here to copy. Restore the recipe before editing it again.</p>}
           <fieldset disabled={busy}>
           <legend className="visually-hidden">Recipe details</legend>
           <label>
@@ -224,14 +237,15 @@ function RecipeDetailContent({ slug }: { slug: string | undefined }) {
             />
           </label>
           <div className="recipe-form-actions">
-            <button className="recipe-button recipe-button-primary" type="submit">{pending === 'save' ? 'Saving…' : 'Save changes'}</button>
-            <button className="recipe-button" type="button" onClick={() => { setEditing(false); setError(null); }}>
+            <button className="recipe-button recipe-button-primary" type="submit" disabled={!ready}>{pending === 'save' ? 'Saving…' : 'Save changes'}</button>
+            <button className="recipe-button" type="button" onClick={async () => { if (await guard.confirmLeave()) { guard.markSaved(); setEditing(false); setError(null); } }}>
               Cancel
             </button>
           </div>
           </fieldset>
         </form>
       )}
+      {canManage && !editing && <RecipeHistory slug={recipe.slug} version={recipeVersion(recipe)} disabled={busy} />}
     </div>
   );
 }

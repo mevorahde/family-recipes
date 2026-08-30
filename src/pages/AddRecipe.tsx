@@ -1,12 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/useAuth';
+import { useUnsavedChanges } from '../context/navigation-context';
 import { useRecipes } from '../context/useRecipes';
 import { importRecipeFile, importRecipeUrl, type ImportedRecipe } from '../lib/recipe-import';
 
 export default function AddRecipe() {
-  const { user } = useAuth();
-  const { addRecipe } = useRecipes();
+  const { addRecipe, ready } = useRecipes();
   const navigate = useNavigate();
 
   const [title, setTitle] = useState('');
@@ -21,6 +20,7 @@ export default function AddRecipe() {
   const [submitting, setSubmitting] = useState(false);
   const [importUrl, setImportUrl] = useState('');
   const [importing, setImporting] = useState(false);
+  const guard = useUnsavedChanges([title, category, tags, servings, prepTime, cookTime, source, content, importUrl].some(Boolean) || importing);
 
   function applyImport(recipe: ImportedRecipe) {
     if (recipe.title) setTitle(recipe.title);
@@ -63,12 +63,14 @@ export default function AddRecipe() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (submitting || importing || !ready) return;
+    if (!title.trim() || !content.trim()) { setError('Please add a title and recipe before saving.'); return; }
     setError(null);
     setSubmitting(true);
     try {
       await addRecipe({
-        title,
-        category: category || 'Uncategorized',
+        title: title.trim(),
+        category: category.trim() || 'Uncategorized',
         tags: tags
           .split(',')
           .map((t) => t.trim())
@@ -78,11 +80,11 @@ export default function AddRecipe() {
         cookTime: cookTime || undefined,
         source: source || undefined,
         content,
-        createdByEmail: user?.email ?? undefined,
       });
+      guard.markSaved();
       navigate('/');
-    } catch {
-      setError('Could not save the recipe. Please try again.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Could not save the recipe. Your draft is still here.');
     } finally {
       setSubmitting(false);
     }
@@ -92,6 +94,8 @@ export default function AddRecipe() {
     <div className="page">
       <h1>Add a Recipe</h1>
       <form className="form" onSubmit={handleSubmit}>
+        <fieldset disabled={submitting || importing} className="recipe-form-fields">
+        <legend className="visually-hidden">New recipe details</legend>
         <fieldset className="import-section" disabled={importing || submitting}>
           <legend>Import a recipe</legend>
           <label>
@@ -156,10 +160,11 @@ export default function AddRecipe() {
             required
           />
         </label>
-        {error && <p className="error">{error}</p>}
-        <button type="submit" disabled={submitting}>
+        {error && <p className="error" role="alert">{error}</p>}
+        <button type="submit" disabled={submitting || importing || !ready}>
           {submitting ? 'Saving…' : 'Save Recipe'}
         </button>
+        </fieldset>
       </form>
     </div>
   );

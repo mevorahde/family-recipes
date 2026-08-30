@@ -24,6 +24,12 @@ Browse the cookbook, search by recipe name or tag, or choose a category. You don
 
 We can both update any recipe, no matter who added it. Changes are shared, so we’ll always see the same cookbook.
 
-**Please double-check before deleting a recipe—there isn’t an undo button.**
+Deleted something by mistake? Open **Recently deleted** and select **Restore recipe**.
+
+To recover earlier wording, open a recipe and choose **Previous versions**. You can preview an older version before restoring it.
+
+For a paper copy, open a recipe and select **Print recipe**.
+
+Wait for **Changes saved for everyone** before leaving an edit. If you lose your connection, keep the page open—your unsaved draft stays in the form.
 
 When you’re finished, select **Sign Out**.
