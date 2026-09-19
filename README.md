@@ -1,8 +1,15 @@
 # Family Recipes
 
-A place to keep and share our family’s favorite recipes.
+A private-write, public-read family cookbook built with React, TypeScript,
+Firebase Authentication, Cloud Firestore, and Firebase callable functions.
+It preserves shared recipes, revision history, recovery workflows, and several
+assisted import paths in a browser-friendly interface.
 
 [Open the family cookbook](https://mevorahde.github.io/family-recipes/).
+
+Anyone can browse the published recipes. Editing is restricted to explicitly
+provisioned family members; the application does not provide public account
+registration.
 
 ## Find a recipe
 
@@ -41,3 +48,73 @@ For a paper copy, open a recipe and select **Print recipe**.
 Wait for **Changes saved for everyone** before leaving an edit. If you lose your connection, keep the page open—your unsaved draft stays in the form.
 
 When you’re finished, select **Sign Out**.
+
+## Architecture and data handling
+
+- Vite builds the React and TypeScript single-page application for GitHub
+  Pages.
+- Firebase Authentication identifies approved editors.
+- Firestore security rules allow public recipe reads and restrict writes,
+  history, trash, and recovery data to enabled family members.
+- Callable Firebase functions perform bounded website imports, image OCR, and
+  permanent deletion.
+- Built-in Markdown recipes are combined with shared Firestore recipes in the
+  browser.
+
+Website imports send the requested public URL to a callable function. Photo
+imports send the selected image to Google Cloud Vision for text recognition;
+the image is not saved as a cookbook asset by this application. Imported and
+recognized text must be reviewed before saving, especially quantities,
+temperatures, handwriting, and source attribution.
+
+## Local development
+
+Use Node.js 22, which matches the Firebase Functions runtime declared by the
+repository. The Firestore emulator tests also require a supported Java runtime
+available on `PATH`. Install the locked dependencies for both workspaces:
+
+```bash
+npm ci
+npm --prefix functions ci
+```
+
+Copy `.env.example` to `.env.local` and populate the six documented
+`VITE_FIREBASE_*` identifiers for a Firebase project you control. Do not commit
+local environment files, service-account credentials, or exported recipe data.
+Firebase web configuration identifies a project; authorization is enforced by
+Authentication and Firestore rules rather than by treating those identifiers
+as secrets.
+
+Start the Vite development server:
+
+```bash
+npm run dev
+```
+
+## Verification
+
+Run the application checks from the repository root:
+
+```bash
+npm run build
+npm run lint
+npm test
+npm run test:firestore
+```
+
+The Firestore test command builds the functions package and runs the rules
+tests against the Firebase emulator with the isolated
+`demo-family-recipes` project identifier. It does not require the production
+Firebase project, but Firebase CLI cannot start the emulator without Java.
+
+## Deployment boundaries
+
+`npm run deploy` builds the front end and publishes `dist` to GitHub Pages.
+Firebase rules and functions are separate infrastructure and are not deployed
+by that command. Review the target Firebase project before using Firebase CLI
+deployment commands.
+
+This repository does not include an open-source license. Public source
+availability permits review but does not grant general reuse or redistribution
+rights. Recipes and imported source material may also have rights independent
+of the application code.
