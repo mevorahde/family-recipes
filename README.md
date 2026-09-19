@@ -114,7 +114,10 @@ Firebase rules and functions are separate infrastructure and are not deployed
 by that command. Review the target Firebase project before using Firebase CLI
 deployment commands.
 
-This repository does not include an open-source license. Public source
-availability permits review but does not grant general reuse or redistribution
-rights. Recipes and imported source material may also have rights independent
-of the application code.
+## License
+
+The application source code and original software documentation authored by
+David E. Mevorah are available under the [MIT License](LICENSE). Recipes,
+photographs, imported source material, personal or family content, trademarks,
+and other third-party material are not covered by that license and remain
+subject to their respective rights holders' terms.
